@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SR University Library Portal</title>
+  <style>
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      background-color: #f2f6fc;
+      padding: 20px;
+    }
+    .hidden { display: none; }
+    header {
+      background-color: #003366;
+      color: white;
+      padding: 25px;
+      text-align: center;
+      border-radius: 10px;
+      margin-bottom: 30px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+    }
+    header h1 {
+      font-size: 28px;
+      margin-bottom: 5px;
+    }
+    header h2 {
+      font-size: 20px;
+      font-weight: 400;
+      margin-top: 0;
+    }
+    .login-box {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    input, select {
+      padding: 8px;
+      margin: 5px 10px 5px 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      width: 220px;
+    }
+    button {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 10px;
+      transition: background-color 0.2s ease;
+    }
+    .add-btn { background-color: #2ecc71; color: white; }
+    .delete-btn { background-color: #e74c3c; color: white; }
+    .borrow-btn { background-color: #3498db; color: white; }
+    .return-btn { background-color: #f39c12; color: white; }
+    .back-btn { background-color: #555; color: white; margin-bottom: 20px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #fff;
+    }
+    th, td {
+      padding: 12px;
+      border: 1px solid #ccc;
+      text-align: left;
+    }
+    th { background-color: #3498db; color: white; }
+    #bookCount {
+      font-weight: bold;
+      color: #003366;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+    #fineNote {
+      color: red;
+      font-weight: bold;
+    }
+    footer {
+      margin-top: 40px;
+      text-align: center;
+      color: #333;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>SR UNIVERSITY</h1>
+    <h2>School of Computer Science and Engineering</h2>
+    <p><b>Library Management System – Digital Access Portal</b></p>
+  </header>
+
+  <button class="back-btn" onclick="goBack()">⬅ Go Back</button>
+
+  <div class="login-box" id="loginPortal">
+    <h2>Login Portal</h2>
+    <button onclick="showStudentLogin()" class="add-btn">Student Login</button>
+    <button onclick="showStaffLogin()" class="borrow-btn">Staff Login</button>
+  </div>
+
+  <!-- STUDENT LOGIN -->
+  <div id="studentLoginForm" class="login-box hidden">
+    <h3>Student Login</h3>
+    <form onsubmit="return validateStudentLogin()" autocomplete="off">
+      <input type="text" id="studentUsername" placeholder="Roll Number" autocomplete="off" required />
+      <input type="password" id="studentPassword" placeholder="Password" autocomplete="new-password" required />
+      <button type="submit" class="add-btn">Login</button>
+    </form>
+    <p id="studentLoginMessage"></p>
+  </div>
+
+  <!-- STAFF LOGIN -->
+  <div id="staffLoginForm" class="login-box hidden">
+    <h3>Staff Login</h3>
+    <form onsubmit="return validateStaffLogin()" autocomplete="off">
+      <input type="text" id="staffUsername" placeholder="Username" autocomplete="off" required />
+      <input type="password" id="staffPassword" placeholder="Password" autocomplete="new-password" required />
+      <button type="submit" class="borrow-btn">Login</button>
+    </form>
+    <p id="loginMessage"></p>
+  </div>
+
+  <!-- BOOKS SECTION -->
+  <div id="bookSection" class="login-box hidden">
+    <h3>Available Books</h3>
+    <p id="bookCount" class="hidden">Total Books Available: 0</p>
+    <input type="text" id="authorSearch" placeholder="Search by author..." onkeyup="filterBooks()" />
+    <table>
+      <thead>
+        <tr>
+          <th>Book Title</th>
+          <th>Author</th>
+          <th>Copies</th>
+          <th id="actionHeader" class="hidden">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="bookTableBody"></tbody>
+    </table>
+  </div>
+
+  <!-- STAFF ADD BOOK -->
+  <div id="addBookForm" class="login-box hidden">
+    <h3>Add New Book (Staff Only)</h3>
+    <input type="text" id="newTitle" placeholder="Book Title" />
+    <input type="text" id="newAuthor" placeholder="Author Name" />
+    <input type="number" id="newCount" placeholder="No. of Copies" min="1" />
+    <button onclick="addBook()" class="add-btn">Add Book</button>
+  </div>
+
+  <!-- ISSUE BOOK FORM -->
+  <div id="issueBookForm" class="login-box hidden">
+    <h3>Issue Book to Student</h3>
+    <input type="text" id="issueRoll" placeholder="Student Roll No." />
+    <select id="issueBookSelect"></select>
+    <button onclick="issueBook()" class="borrow-btn">Issue Book</button>
+  </div>
+
+  <!-- ISSUED BOOKS (STAFF) -->
+  <div id="issuedList" class="login-box hidden">
+    <h3>Issued Books (All Students)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Roll No</th>
+          <th>Book Title</th>
+          <th>Issue Date</th>
+          <th>Due Date</th>
+          <th>Fine (₹)</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="issuedTableBody"></tbody>
+    </table>
+  </div>
+
+  <!-- STUDENT FINE CHECK -->
+  <div id="studentFineSection" class="login-box hidden">
+    <h3>Your Borrowed Books & Fines</h3>
+    <p id="fineNote"></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Book Title</th>
+          <th>Issue Date</th>
+          <th>Due Date</th>
+          <th>Fine (₹)</th>
+        </tr>
+      </thead>
+      <tbody id="studentFineTableBody"></tbody>
+    </table>
+  </div>
+
+  <footer>
+    <p>© 2025 SR University | Library Management System</p>
+    <p>Developed by Department of CSE (B.Tech Students)</p>
+  </footer>
+
+  <script>
+    let books = [
+      { title: "Clean Code", author: "Robert C. Martin", count: 5 },
+      { title: "Python Crash Course", author: "Eric Matthes", count: 8 },
+      { title: "Operating System Concepts", author: "A. Silberschatz", count: 3 }
+    ];
+    let issuedBooks = [];
+    let isStaff = false;
+    let currentStudent = "";
+
+    function goBack() {
+      document.querySelectorAll(".login-box").forEach(div => div.classList.add("hidden"));
+      document.getElementById("loginPortal").classList.remove("hidden");
+      currentStudent = "";
+    }
+
+    function showStudentLogin() {
+      document.getElementById("studentLoginForm").classList.remove("hidden");
+      document.getElementById("staffLoginForm").classList.add("hidden");
+    }
+
+    function showStaffLogin() {
+      document.getElementById("staffLoginForm").classList.remove("hidden");
+      document.getElementById("studentLoginForm").classList.add("hidden");
+    }
+
+    function validateStudentLogin() {
+      const u = document.getElementById("studentUsername").value.trim();
+      const p = document.getElementById("studentPassword").value.trim();
+      if ((u === "student01" && p === "pass123") || (u === "2403a51028" && p === "Student@1374")) {
+        currentStudent = u;
+        isStaff = false;
+        document.getElementById("studentLoginForm").classList.add("hidden");
+        document.getElementById("loginPortal").classList.add("hidden");
+        document.getElementById("bookSection").classList.remove("hidden");
+        document.getElementById("studentFineSection").classList.remove("hidden");
+        renderBooks();
+        renderStudentFines();
+      } else {
+        document.getElementById("studentLoginMessage").textContent = "Invalid student credentials.";
+      }
+      document.getElementById("studentPassword").value = "";
+      return false;
+    }
+
+    function validateStaffLogin() {
+      const u = document.getElementById("staffUsername").value.trim();
+      const p = document.getElementById("staffPassword").value.trim();
+      if ((u === "staff" && p === "1234") || (u === "2403a51028" && p === "Student@1374")) {
+        isStaff = true;
+        document.getElementById("staffLoginForm").classList.add("hidden");
+        document.getElementById("loginPortal").classList.add("hidden");
+        document.getElementById("bookSection").classList.remove("hidden");
+        document.getElementById("addBookForm").classList.remove("hidden");
+        document.getElementById("issueBookForm").classList.remove("hidden");
+        document.getElementById("issuedList").classList.remove("hidden");
+        document.getElementById("bookCount").classList.remove("hidden");
+        renderBooks();
+      } else {
+        document.getElementById("loginMessage").textContent = "Invalid staff credentials.";
+      }
+      document.getElementById("staffPassword").value = "";
+      return false;
+    }
+
+    function renderBooks() {
+      const tbody = document.getElementById("bookTableBody");
+      tbody.innerHTML = "";
+      books.forEach((book, index) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${book.title}</td>
+          <td>${book.author}</td>
+          <td>${book.count}</td>
+          ${isStaff ? `<td><button onclick="deleteBook(${index})" class="delete-btn">Delete</button></td>` : ""}
+        `;
+        tbody.appendChild(row);
+      });
+      document.getElementById("actionHeader").classList.toggle("hidden", !isStaff);
+      updateBookCount();
+      updateIssueDropdown();
+      renderIssuedBooks();
+    }
+
+    function deleteBook(index) {
+      books.splice(index, 1);
+      renderBooks();
+    }
+
+    function addBook() {
+      const title = document.getElementById("newTitle").value.trim();
+      const author = document.getElementById("newAuthor").value.trim();
+      const count = parseInt(document.getElementById("newCount").value.trim());
+      if (title && author && count > 0) {
+        books.push({ title, author, count });
+        document.getElementById("newTitle").value = "";
+        document.getElementById("newAuthor").value = "";
+        document.getElementById("newCount").value = "";
+        renderBooks();
+      } else {
+        alert("Please enter valid book details and count > 0");
+      }
+    }
+
+    function updateBookCount() {
+      const total = books.reduce((sum, book) => sum + book.count, 0);
+      document.getElementById("bookCount").textContent = "Total Books Available: " + total;
+    }
+
+    function updateIssueDropdown() {
+      const select = document.getElementById("issueBookSelect");
+      select.innerHTML = "";
+      books.forEach((book, i) => {
+        const opt = document.createElement("option");
+        opt.value = i;
+        opt.textContent = `${book.title} (${book.count} available)`;
+        select.appendChild(opt);
+      });
+    }
+
+    function issueBook() {
+      const roll = document.getElementById("issueRoll").value.trim();
+      const bookIndex = parseInt(document.getElementById("issueBookSelect").value);
+      if (!roll) return alert("Enter student roll number!");
+      if (books[bookIndex].count <= 0) return alert("No copies left for this book!");
+
+      const issueDate = new Date();
+      const dueDate = new Date(issueDate);
+      dueDate.setDate(issueDate.getDate() + 3);
+
+      books[bookIndex].count -= 1;
+      issuedBooks.push({
+        roll,
+        book: books[bookIndex].title,
+        issueDate,
+        dueDate
+      });
+
+      document.getElementById("issueRoll").value = "";
+      renderBooks();
+    }
+
+    function calculateFine(dueDate) {
+      const today = new Date();
+      const diff = Math.floor((today - new Date(dueDate)) / (1000 * 60 * 60 * 24));
+      return diff > 0 ? diff * 100 : 0;
+    }
+
+    function returnBook(index) {
+      const record = issuedBooks[index];
+      const book = books.find(b => b.title === record.book);
+      if (book) book.count += 1;
+      issuedBooks.splice(index, 1);
+      renderBooks();
+    }
+
+    function renderIssuedBooks() {
+      const tbody = document.getElementById("issuedTableBody");
+      tbody.innerHTML = "";
+      issuedBooks.forEach((record, index) => {
+        const fine = calculateFine(record.dueDate);
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${record.roll}</td>
+          <td>${record.book}</td>
+          <td>${new Date(record.issueDate).toLocaleDateString()}</td>
+          <td>${new Date(record.dueDate).toLocaleDateString()}</td>
+          <td>${fine}</td>
+          <td><button onclick="returnBook(${index})" class="return-btn">Return</button></td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // Student Fine Viewer
+    function renderStudentFines() {
+      const tbody = document.getElementById("studentFineTableBody");
+      const fineNote = document.getElementById("fineNote");
+      tbody.innerHTML = "";
+
+      const myBooks = issuedBooks.filter(b => b.roll === currentStudent);
+      if (myBooks.length === 0) {
+        fineNote.textContent = "No books issued. Please contact the librarian to borrow books.";
+        return;
+      }
+
+      let totalFine = 0;
+      myBooks.forEach(record => {
+        const fine = calculateFine(record.dueDate);
+        totalFine += fine;
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${record.book}</td>
+          <td>${new Date(record.issueDate).toLocaleDateString()}</td>
+          <td>${new Date(record.dueDate).toLocaleDateString()}</td>
+          <td>${fine}</td>
+        `;
+        tbody.appendChild(row);
+      });
+
+      fineNote.textContent =
+        totalFine > 0
+          ? `⚠ You have a pending fine of ₹${totalFine}. Please submit your books immediately to avoid extra charges.`
+          : "✅ No pending fines. Please return books before the due date.";
+    }
+
+    function filterBooks() {
+      const query = document.getElementById("authorSearch").value.toLowerCase();
+      const tbody = document.getElementById("bookTableBody");
+      tbody.innerHTML = "";
+      books
+        .filter(book => book.author.toLowerCase().includes(query))
+        .forEach((book, index) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${book.title}</td>
+            <td>${book.author}</td>
+            <td>${book.count}</td>
+            ${isStaff ? `<td><button onclick="deleteBook(${index})" class="delete-btn">Delete</button></td>` : ""}
+          `;
+          tbody.appendChild(row);
+        });
+    }
+  </script>
+</body>
+</html>
